@@ -5,6 +5,7 @@ from threading import Thread
 from collections import defaultdict
 import requests
 import json
+import numpy as np
 
 
 class Parser(Thread):
@@ -48,6 +49,7 @@ if __name__ == "__main__":
 
     coins_symbol = {e["symbol"].upper() for e in data}
     coins_name = {e["name"].upper(): e["symbol"].upper() for e in data}
+    coins_id = {e["symbol"].upper(): e["id"] for e in data}
 
     path = os.path.dirname(__file__)
     path = path[0 : len(path) - path[::-1].index("/")] + "data/"
@@ -57,7 +59,7 @@ if __name__ == "__main__":
     counter = defaultdict(int)
 
     blacklist = pd.read_csv(path + "3000_most_common_english_words.csv")
-    blacklist = set(map(lambda x: x.upper(), blacklist["a"]))
+    blacklist = set(map(lambda x: x.upper(), blacklist.values.flatten()))
 
     for source in os.listdir(path):
         if not os.path.isdir(path + source):
@@ -93,9 +95,12 @@ if __name__ == "__main__":
         for k, v in e.counter.items():
             counter[k] += v
 
+    for k, v in counter.items():
+        counter[k] = [v, coins_id[k]]
+
     counter_df = (
         pd.DataFrame.from_dict(
-            columns=["count"],
+            columns=["count", "id"],
             data=counter,
             orient="index",
         )
@@ -107,7 +112,7 @@ if __name__ == "__main__":
     tracked_coins_df = pd.DataFrame(columns=["symbol"], data=tracked_coins)
 
     counter_df.to_csv(
-        open(path + "tracked_coins_count.csv", "w"),
+        open(path + "tracked_coins_details.csv", "w"),
         index=False,
     )
 
