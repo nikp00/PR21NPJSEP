@@ -14,6 +14,12 @@ TRACKED_COIN_DIR = os.path.join(BASE_PATH, "data/tracked_coins")
 MIN_DATE = "2021-02-01 00:00:00"
 MAX_DATE = "2021-03-31 23:00:00"
 
+COLOR_MAIN = "#363A45"
+COLOR_MA_5 = "#FF9800"
+COLOR_MA_8 = "#E040FB"
+COLOR_MA_13 = "#9C27B0"
+COLOR_VOLUME = "#B2B5BE"
+
 LAG = 24
 THRESHOLD = 5
 INFLUENCE = 1
@@ -140,6 +146,16 @@ for pos, e in enumerate(df.index):
         index_col="date",
     )
 
+    volume_data = pd.read_csv(
+        open(
+            os.path.join(PRICE_DATA_DIR, TRACKED_COIN, f"{TRACKED_COIN}_volume.csv"),
+            "r",
+        ),
+        parse_dates=True,
+        date_parser=date_parser,
+        index_col="date",
+    )
+
     result_mentions = thresholding_algo(
         mentions_data["count"], lag=LAG, threshold=THRESHOLD, influence=INFLUENCE
     )
@@ -164,7 +180,6 @@ for pos, e in enumerate(df.index):
         result_mentions["avgFilter"] + THRESHOLD * result_mentions["stdFilter"],
         color="#9fe6a0",
     )
-
     ax[0].plot(
         mentions_data.index,
         result_mentions["avgFilter"] - THRESHOLD * result_mentions["stdFilter"],
@@ -180,13 +195,28 @@ for pos, e in enumerate(df.index):
         label=f"Threshold (mean +- {THRESHOLD} * std)",
     )
 
-    ax[1].plot(price_data["price"], label="Price")
+    ax[1].bar(
+        height=volume_data["volume"],
+        x=volume_data.index,
+        color=COLOR_VOLUME,
+        label="Volume",
+        width=0.06,
+    )
+
+    ax2 = ax[1].twinx()
+
+    ax2.plot(price_data["price"], label="Price")
 
     for i, (sig, date) in enumerate(
         zip(result_mentions["signals"], mentions_data.index)
     ):
-        if sig == 1 and i <= len(price_data):
-            ax[1].plot(
+        if sig == 1 and i < len(price_data):
+            print()
+            print("--------------")
+            print(e)
+            print(price_data.iloc[i])
+            print("#############################")
+            ax2.plot(
                 datetime.datetime.fromisoformat(str(date)),
                 price_data.iloc[i]["price"],
                 "ro",
@@ -199,11 +229,12 @@ for pos, e in enumerate(df.index):
     ax[0].legend()
 
     h1, l1 = ax[1].get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
 
     ax[1].set_title(f"{TRACKED_COIN} price and spike detection markers")
     ax[1].set_ylabel("Price [USD]")
     ax[1].set_xlabel("Time")
-    ax[1].legend(list(h1)[0:2], list(l1)[0:2])
+    ax[1].legend(h1 + list(h2)[0:2], l1 + list(l2)[0:2])
 
     fig.suptitle(TRACKED_COIN, fontsize=22)
     plt.savefig(
@@ -211,3 +242,4 @@ for pos, e in enumerate(df.index):
             BASE_PATH, "visualization/spikes", f"{pos+1}_{TRACKED_COIN}_spike.png"
         )
     )
+    plt.close(fig)
