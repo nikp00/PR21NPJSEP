@@ -38,14 +38,17 @@ def get_data(symbol, symbol_id, start, end, path):
 
     df = pd.DataFrame(columns=["date", "price"], data=data["prices"])
     df["date"] = df["date"].apply(lambda x: convert_time(x, micros=True))
+    df = df.drop_duplicates(subset="date")
     df.to_csv(path + "/" + symbol + "_price.csv", index=False)
 
     df = pd.DataFrame(columns=["date", "market_cap"], data=data["market_caps"])
     df["date"] = df["date"].apply(lambda x: convert_time(x, micros=True))
+    df = df.drop_duplicates(subset="date")
     df.to_csv(path + "/" + symbol + "_market_cap.csv", index=False)
 
     df = pd.DataFrame(columns=["date", "volume"], data=data["total_volumes"])
     df["date"] = df["date"].apply(lambda x: convert_time(x, micros=True))
+    df = df.drop_duplicates(subset="date")
     df.to_csv(path + "/" + symbol + "_volume.csv", index=False)
 
     print(f"{symbol} saved.")

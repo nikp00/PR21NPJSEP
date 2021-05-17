@@ -25,6 +25,9 @@ THRESHOLD = 5
 INFLUENCE = 1
 HOURDIFF = 12
 
+TITLE_SIZE = 20
+AXES_LABELS_SIZE = 15
+
 plt.style.use("seaborn")
 
 
@@ -108,6 +111,7 @@ for coin in tracked_coins.symbol:
         mentions_data["count"], lag=LAG, threshold=THRESHOLD, influence=INFLUENCE
     )
 
+    print(TRACKED_COIN)
     result_price = thresholding_algo(
         price_data["price"], lag=LAG, threshold=THRESHOLD, influence=INFLUENCE
     )
@@ -164,10 +168,6 @@ for pos, e in enumerate(df.index):
         price_data["price"], lag=LAG, threshold=THRESHOLD, influence=INFLUENCE
     )
 
-    result[TRACKED_COIN] = count_spike_diff(
-        result_mentions["signals"], result_price["signals"], hourdiff=HOURDIFF
-    )
-
     ax[0].plot(mentions_data["count"], label="Mentions count")
     ax[0].plot(
         mentions_data.index,
@@ -195,7 +195,8 @@ for pos, e in enumerate(df.index):
         label=f"Threshold (mean +- {THRESHOLD} * std)",
     )
 
-    ax[1].bar(
+    ax2 = ax[1].twinx()
+    ax2.bar(
         height=volume_data["volume"],
         x=volume_data.index,
         color=COLOR_VOLUME,
@@ -203,40 +204,43 @@ for pos, e in enumerate(df.index):
         width=0.06,
     )
 
-    ax2 = ax[1].twinx()
-
-    ax2.plot(price_data["price"], label="Price")
+    ax[1].plot(price_data["price"], label="Price")
 
     for i, (sig, date) in enumerate(
         zip(result_mentions["signals"], mentions_data.index)
     ):
         if sig == 1 and i < len(price_data):
-            print()
-            print("--------------")
-            print(e)
-            print(price_data.iloc[i])
-            print("#############################")
-            ax2.plot(
+            ax[1].plot(
                 datetime.datetime.fromisoformat(str(date)),
                 price_data.iloc[i]["price"],
                 "ro",
                 label="Spike marker",
             )
 
-    ax[0].set_title("Z-Score peak detection of mentions")
-    ax[0].set_ylabel("Number of mentions")
-    ax[0].set_xlabel("Time")
+    ax[0].set_title("Z-Score peak detection of mentions", fontsize=TITLE_SIZE)
+    ax[0].set_ylabel("Number of mentions", fontsize=AXES_LABELS_SIZE)
+    ax[0].set_xlabel("Time", fontsize=AXES_LABELS_SIZE)
     ax[0].legend()
 
     h1, l1 = ax[1].get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
 
-    ax[1].set_title(f"{TRACKED_COIN} price and spike detection markers")
-    ax[1].set_ylabel("Price [USD]")
-    ax[1].set_xlabel("Time")
-    ax[1].legend(h1 + list(h2)[0:2], l1 + list(l2)[0:2])
+    ax[1].set_title(
+        f"{TRACKED_COIN} price and spike detection markers", fontsize=TITLE_SIZE
+    )
+    ax[1].set_ylabel("Price [USD]", fontsize=AXES_LABELS_SIZE)
+    ax[1].set_xlabel("Time", fontsize=AXES_LABELS_SIZE)
+    ax[1].legend(h2 + list(h1)[0:2], l2 + list(l1)[0:2])
+    ax[1].set_zorder(ax2.get_zorder() + 1)
+    ax[1].patch.set_visible(False)
+
+    ax2.grid(b=None)
+    ax2.patch.set_visible(True)
+    ax2.set_ylabel("Volume", fontsize=AXES_LABELS_SIZE)
 
     fig.suptitle(TRACKED_COIN, fontsize=22)
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+
     plt.savefig(
         os.path.join(
             BASE_PATH, "visualization/spikes", f"{pos+1}_{TRACKED_COIN}_spike.png"

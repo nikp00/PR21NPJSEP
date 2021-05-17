@@ -207,6 +207,7 @@ if __name__ == "__main__":
                 df_data.append([e, 0])
 
         df = pd.DataFrame(columns=["date", "count"], data=df_data)
+        df = df.drop_duplicates(subset="date")
         df.to_csv(
             open(os.path.join(path, "date_count", f"{symbol}.csv"), "w"), index=False
         )
